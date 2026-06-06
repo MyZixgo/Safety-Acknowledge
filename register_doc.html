@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register Document</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f6f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: auto;
+            padding: 16px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-title {
+            font-weight: bold;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .upload-box {
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            text-align: center;
+            padding: 20px;
+            color: #888;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .upload-box:hover {
+            border-color: #007bff;
+            color: #007bff;
+            background: #f0f8ff;
+        }
+
+        .preview {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            margin-top: 4px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+
+        textarea {
+            resize: none;
+        }
+
+        .link-box {
+            background: #eef6ff;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 10px;
+            word-break: break-all;
+            font-size: 13px;
+            color: #1f3b57;
+            border: 1px solid #d6e8ff;
+        }
+
+        .buttons {
+            position: sticky;
+            bottom: 0;
+            display: flex;
+            gap: 10px;
+            background: #fff;
+            padding: 12px 0;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        /* disabled = เทา */
+        .btn:disabled {
+            opacity: 1;
+            cursor: not-allowed;
+        }
+
+        .btn-cancel {
+            background: #ddd;
+            color: #333;
+        }
+
+        .btn-publish {
+            background: #28a745;
+            color: #fff;
+        }
+
+        .btn-publish:disabled {
+            background: #b8c0c7;
+            color: #ffffff;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: #fff;
+            margin-top: 10px;
+        }
+
+        .btn-copy {
+            background: #6c757d;
+            color: #fff;
+            margin-top: 10px;
+        }
+
+        .checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 14px;
+            font-size: 13px;
+        }
+
+        .checkbox input {
+            width: auto;
+            margin: 0;
+        }
+
+        .status-text {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .success {
+            color: #198754;
+        }
+
+        .error {
+            color: #dc3545;
+        }
+
+        .small-note {
+            font-size: 12px;
+            color: #777;
+            margin-top: 8px;
+        }
+
+        .required-missing {
+            border-color: #dc3545 !important;
+            background: #fff5f5;
+        }
+
+        .upload-missing {
+            border-color: #dc3545 !important;
+            background: #fff5f5 !important;
+            color: #dc3545 !important;
+        }
+
+        .publish-hint {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #777;
+        }
+
+        .publish-hint.ready {
+            color: #198754;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h2>📄 Register Document</h2>
+
+        <!-- Upload -->
+        <div class="card">
+            <div class="card-title">📥 Upload Document</div>
+
+            <div class="upload-box" id="uploadBox">+ Tap to upload file</div>
+            <input type="file" id="fileInput" hidden>
+
+            <div class="preview" id="preview">ยังไม่มีไฟล์</div>
+            <div class="small-note">รองรับรูป / PDF / เอกสารทั่วไป (จะถูกแปลงเป็น Base64 ก่อนส่งไป Power Automate)</div>
+        </div>
+
+        <!-- Info -->
+        <div class="card">
+            <div class="card-title">📋 Document Information</div>
+
+            <label>Document Name *</label>
+            <input type="text" id="txtDocName" placeholder="Enter document name">
+
+            <label>Document ID *</label>
+            <input type="text" id="txtDocID" placeholder="SAF-001">
+
+            <label>Description *</label>
+            <textarea rows="3" id="txtDescription" placeholder="Required"></textarea>
+
+            <label>Effective Date *</label>
+            <input type="date" id="txtDate">
+
+            <div class="small-note" id="docKeyPreview">DocKey: -</div>
+        </div>
+
+        <!-- Status -->
+        <div class="card">
+            <div class="card-title">⚙️ Document Status</div>
+            <div class="checkbox">
+                <input type="checkbox" id="chkActive">
+                <span>Active *</span>
+            </div>
+            <div class="small-note">ต้องติ๊ก Active ก่อนจึงจะ Publish และ Generate Link ได้</div>
+        </div>
+
+        <!-- Link -->
+        <div class="card">
+            <div class="card-title">🔗 Generate Link</div>
+
+            <button class="btn btn-primary" id="btnGenerate" disabled>Generate Link</button>
+
+            <div class="link-box" id="linkBox">
+                ยังไม่มีลิงก์
+            </div>
+
+            <button class="btn btn-copy" id="btnCopy">📋 Copy</button>
+            <button class="btn btn-primary" id="btnQR">📷 Show QR</button>
+
+            <div id="qrBox" style="text-align:center;margin-top:10px;"></div>
+            <div class="status-text" id="genStatus">สถานะ: ยังไม่ได้ Publish หรือยังไม่ได้ติ๊ก Active</div>
+        </div>
+
+        <!-- Action -->
+        <div class="card-title">🚀 Save Document</div>
+        <div class="buttons">
+            <button class="btn btn-cancel" id="btnCancel">Cancel</button>
+            <button class="btn btn-publish" id="btnPublish" disabled>Publish</button>
+        </div>
+        <div class="publish-hint" id="publishHint">กรอกข้อมูลให้ครบทั้งหมดก่อน จึงจะสามารถ Publish ได้</div>
+
+    </div>
+
+    <script>
+
+        let isPublished = false;
+
+        // ==============================
+        // CONFIG
+        // ==============================
+        const baseURL = "https://myzixgo.github.io/Safety-Acknowledge/emp_acknowledge.html";
+        const FLOW_URL = "https://defaultd9cd485e39bd4cc995398c97631fbb.71.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8200a6f10f8146e1980c92b678a0ca3c/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xAGfMQgr9boz-o6GilhFNfg4LJa6ccESXYNzExOpLyM";
+
+        // ==============================
+        // ELEMENTS
+        // ==============================
+        const txtDocName = document.getElementById("txtDocName");
+        const txtDocID = document.getElementById("txtDocID");
+        const txtDescription = document.getElementById("txtDescription");
+        const txtDate = document.getElementById("txtDate");
+        const chkActive = document.getElementById("chkActive");
+
+        const uploadBox = document.getElementById("uploadBox");
+        const fileInput = document.getElementById("fileInput");
+        const preview = document.getElementById("preview");
+
+        const btnGenerate = document.getElementById("btnGenerate");
+        const btnCopy = document.getElementById("btnCopy");
+        const btnQR = document.getElementById("btnQR");
+        const btnPublish = document.getElementById("btnPublish");
+        const btnCancel = document.getElementById("btnCancel");
+
+        const linkBox = document.getElementById("linkBox");
+        const qrBox = document.getElementById("qrBox");
+        const genStatus = document.getElementById("genStatus");
+        const docKeyPreview = document.getElementById("docKeyPreview");
+        const publishHint = document.getElementById("publishHint");
+
+        // ==============================
+        // STATE
+        // ==============================
+        let selectedFile = null;
+        let uploadedFileLink = "";
+        let uploadedFileName = "";
+        let latestDocKey = "";
+        let latestFlowResponse = null;
+
+        // ==============================
+        // UTIL
+        // ==============================
+        function sanitizeText(value) {
+            return (value || "")
+                .trim()
+                .replace(/\s+/g, "_")
+                .replace(/[^\wก-๙-]/g, "");
+        }
+
+        function getNowStamp() {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, "0");
+            const dd = String(now.getDate()).padStart(2, "0");
+            const hh = String(now.getHours()).padStart(2, "0");
+            const mi = String(now.getMinutes()).padStart(2, "0");
+            const ss = String(now.getSeconds()).padStart(2, "0");
+            return `${yyyy}${mm}${dd}_${hh}${mi}${ss}`;
+        }
+
+        function buildDocKey() {
+            const safeName = sanitizeText(txtDocName.value || "Document");
+            return `${safeName}_${getNowStamp()}`;
+        }
+
+        function updateDocKeyPreview() {
+            const safeName = sanitizeText(txtDocName.value);
+            docKeyPreview.innerText = safeName ? `DocKey: ${safeName}_YYYYMMDD_HHMMSS` : "DocKey: -";
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // ส่งเฉพาะ base64 ไม่เอา prefix data:image/...;base64,
+                    const base64Only = reader.result.split(",")[1];
+                    resolve(base64Only);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function showPreview(file) {
+            preview.innerHTML = `
+                📄 ${file.name}<br>
+                ✅ ${(file.size / 1024 / 1024).toFixed(2)} MB
+            `;
+        }
+
+        function resetValidationUI() {
+            [txtDocName, txtDocID, txtDescription, txtDate].forEach(el => {
+                el.classList.remove("required-missing");
+            });
+            uploadBox.classList.remove("upload-missing");
+        }
+
+        function validateRequiredFields(showHighlight = false) {
+            const validName = !!txtDocName.value.trim();
+            const validID = !!txtDocID.value.trim();
+            const validDescription = !!txtDescription.value.trim();
+            const validDate = !!txtDate.value;
+            const validActive = chkActive.checked;
+            const validFile = !!selectedFile;
+
+            if (showHighlight) {
+                txtDocName.classList.toggle("required-missing", !validName);
+                txtDocID.classList.toggle("required-missing", !validID);
+                txtDescription.classList.toggle("required-missing", !validDescription);
+                txtDate.classList.toggle("required-missing", !validDate);
+                uploadBox.classList.toggle("upload-missing", !validFile);
+            }
+
+            return validName && validID && validDescription && validDate && validActive && validFile;
+        }
+
+        function updatePublishButtonState() {
+
+            // ✅ ถ้า publish แล้ว → lock ตลอด
+            if (isPublished) {
+                btnPublish.disabled = true;
+                publishHint.innerText = "Published แล้ว ✅";
+                publishHint.className = "publish-hint ready";
+                return;
+            }
+
+            const isReady = validateRequiredFields(false);
+            btnPublish.disabled = !isReady;
+
+            if (isReady) {
+                publishHint.innerText = "พร้อม Publish";
+                publishHint.className = "publish-hint ready";
+            } else {
+                publishHint.innerText = "กรอกข้อมูลให้ครบก่อน";
+                publishHint.className = "publish-hint";
+            }
+        }
+
+        function updateGenerateButtonState() {
+            const canGenerate = chkActive.checked && !!uploadedFileLink;
+            btnGenerate.disabled = !canGenerate;
+
+            if (!chkActive.checked) {
+                genStatus.innerText = "สถานะ: ต้องติ๊ก Active ก่อน";
+                genStatus.className = "status-text";
+            } else if (!uploadedFileLink) {
+                genStatus.innerText = "สถานะ: ต้อง Publish ให้ Power Automate บันทึกไฟล์ก่อน";
+                genStatus.className = "status-text";
+            } else {
+                genStatus.innerText = "สถานะ: พร้อม Generate Link";
+                genStatus.className = "status-text success";
+            }
+        }
+
+        function resetForm() {
+            txtDocName.value = "";
+            txtDocID.value = "";
+            txtDescription.value = "";
+            txtDate.value = "";
+            chkActive.checked = false;
+
+            fileInput.value = "";
+            preview.innerText = "ยังไม่มีไฟล์";
+            selectedFile = null;
+
+            uploadedFileLink = "";
+            uploadedFileName = "";
+            latestDocKey = "";
+            latestFlowResponse = null;
+
+            linkBox.innerText = "ยังไม่มีลิงก์";
+            qrBox.innerHTML = "";
+
+            resetValidationUI();
+            updateDocKeyPreview();
+            updatePublishButtonState();
+            updateGenerateButtonState();
+        }
+
+        // ==============================
+        // EVENTS
+        // ==============================
+        uploadBox.addEventListener("click", () => fileInput.click());
+
+        fileInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            selectedFile = file;
+            showPreview(file);
+
+            // เปลี่ยนไฟล์ใหม่ -> ต้อง Publish ใหม่
+            uploadedFileLink = "";
+            uploadedFileName = "";
+            latestFlowResponse = null;
+            linkBox.innerText = "ยังไม่มีลิงก์";
+            qrBox.innerHTML = "";
+
+            uploadBox.classList.remove("upload-missing");
+            updatePublishButtonState();
+            updateGenerateButtonState();
+        });
+
+        [txtDocName, txtDocID, txtDescription, txtDate].forEach(el => {
+            el.addEventListener("input", () => {
+                el.classList.remove("required-missing");
+                updateDocKeyPreview();
+                updatePublishButtonState();
+            });
+
+            el.addEventListener("change", () => {
+                el.classList.remove("required-missing");
+                updateDocKeyPreview();
+                updatePublishButtonState();
+            });
+        });
+
+        chkActive.addEventListener("change", () => {
+            updatePublishButtonState();
+            updateGenerateButtonState();
+        });
+
+        // ==============================
+        // PUBLISH
+        // ==============================
+        btnPublish.addEventListener("click", async () => {
+
+            if (isPublished) {
+                alert("❌ Publish แล้ว ห้ามกดซ้ำ");
+                return;
+            }
+
+            const valid = validateRequiredFields(true);
+            if (!valid) {
+                alert("❌ กรุณากรอกข้อมูลให้ครบทั้งหมดก่อน Publish");
+                updatePublishButtonState();
+                return;
+            }
+
+            try {
+                btnPublish.disabled = true;
+                btnPublish.innerText = "Publishing...";
+
+                latestDocKey = buildDocKey();
+                const base64Only = await fileToBase64(selectedFile);
+
+                const payload = {
+                    StatusDocument:"Register",
+                    DocumentName: txtDocName.value.trim(),
+                    DocumentID: txtDocID.value.trim(),
+                    Description: txtDescription.value.trim(),
+                    EffectiveDate: txtDate.value,
+                    Active: chkActive.checked,
+                    DocKey: latestDocKey,
+                    OriginalFileName: selectedFile.name,
+                    MimeType: selectedFile.type || "application/octet-stream",
+                    FileBase64: base64Only
+                };
+
+                const response = await fetch(FLOW_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    console.error("Flow error response:", errText);
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                latestFlowResponse = result;
+
+                uploadedFileLink =
+                    result.fileLink ||
+                    result.imageLink ||
+                    result.link ||
+                    result.url ||
+                    result.FileLink ||
+                    result.ImageLink ||
+                    result.Link ||
+                    "";
+
+                uploadedFileName =
+                    result.fileName ||
+                    result.FileName ||
+                    selectedFile.name;
+
+                if (!uploadedFileLink) {
+                    alert("⚠️ Publish สำเร็จ แต่ Flow ยังไม่ส่งลิงก์ไฟล์กลับมา");
+                } else {
+                    alert("✅ Publish สำเร็จ และได้รับลิงก์ไฟล์กลับมาแล้ว");
+
+                    // ✅ LOCK ปุ่ม publish
+                    isPublished = true;
+                    btnPublish.disabled = true;
+                    btnPublish.innerText = "Published ✅";
+
+                    // ✅ กัน generate ซ้ำด้วย (optional แต่แนะนำ)
+                    btnPublish.classList.add("btn-disabled");
+                }
+
+                updateGenerateButtonState();
+
+            } catch (error) {
+                console.error(error);
+                alert("❌ Error ส่งข้อมูลไป Power Automate");
+            } finally {
+                if (!isPublished) {
+                    btnPublish.innerText = "Publish";
+                    updatePublishButtonState();
+                }
+
+            }
+        });
+
+        // ==============================
+        // GENERATE LINK
+        // ==============================
+        btnGenerate.addEventListener("click", () => {
+            if (!chkActive.checked) {
+                alert("❌ กรุณาติ๊ก Active ก่อน");
+                return;
+            }
+
+            if (!uploadedFileLink) {
+                alert("❌ กรุณา Publish ก่อน เพื่อให้ Power Automate ส่งลิงก์ไฟล์กลับมา");
+                return;
+            }
+
+            const finalLink =
+                `${baseURL}?doc=${encodeURIComponent(txtDocID.value.trim())}` +
+                `&key=${encodeURIComponent(latestDocKey)}` +
+                `&file=${encodeURIComponent(uploadedFileLink)}`;
+
+            linkBox.innerText = finalLink;
+            genStatus.innerText = "สถานะ: Generate Link สำเร็จ";
+            genStatus.className = "status-text success";
+        });
+
+        // ==============================
+        // COPY
+        // ==============================
+        btnCopy.addEventListener("click", async () => {
+            const text = linkBox.innerText.trim();
+
+            if (!text || text === "ยังไม่มีลิงก์") {
+                alert("❌ ยังไม่มีลิงก์ให้ Copy");
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(text);
+                alert("✅ Copied");
+            } catch {
+                alert("❌ Copy ไม่สำเร็จ");
+            }
+        });
+
+        // ==============================
+        // QR
+        // ==============================
+        btnQR.addEventListener("click", () => {
+            const url = linkBox.innerText.trim();
+
+            if (!url || url === "ยังไม่มีลิงก์") {
+                alert("❌ ยังไม่มีลิงก์สำหรับสร้าง QR");
+                return;
+            }
+
+            qrBox.innerHTML =
+                `<img alt="QR Code" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}">`;
+        });
+
+        // ==============================
+        // CANCEL
+        // ==============================
+        btnCancel.addEventListener("click", () => {
+            resetForm();
+        });
+
+        // ==============================
+        // INIT
+        // ==============================
+        updateDocKeyPreview();
+        updatePublishButtonState();
+        updateGenerateButtonState();
+    </script>
+
+</body>
+
+</html>
