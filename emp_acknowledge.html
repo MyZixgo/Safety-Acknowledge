@@ -208,7 +208,7 @@
 
         <!-- Document -->
         <div class="card">
-            <div class="card-title">📖 Document</div>
+            <div class="card-title">📖 เอกสารสำหรับสื่อสาร</div>
 
             <div class="viewer">กำลังโหลดเอกสาร...</div>
             <button id="btnView" class="view-btn" disabled>🔍 View</button>
@@ -217,25 +217,26 @@
 
         <!-- Employee Info -->
         <div class="card">
-            <div class="card-title">👤 Your Information</div>
+            <div class="card-title">👤 ข้อมูลผู้ใช้งาน</div>
 
-            <label>Employee Code *</label>
+            <label>รหัสพนักงาน *</label>
             <input type="text" placeholder="Enter your code">
 
-            <label>Name *</label>
+            <label>ชื่อ นามสกุล *</label>
             <input type="text" placeholder="Enter your name">
+
         </div>
 
         <!-- Confirm -->
         <div class="card">
-            <div class="card-title">✅ Confirmation</div>
+            <div class="card-title">✅ การรับทราบ</div>
 
             <div class="checkbox">
                 <input type="checkbox">
-                <span>I have read and understood this document</span>
+                <span>ข้าพเจ้าได้อ่านและเข้าใจเอกสารนี้แล้ว</span>
             </div>
 
-            <button class="btn">✅ Acknowledge</button>
+            <button class="btn">✅ รับทราบ</button>
 
             <div id="status" class="status"></div>
         </div>
@@ -434,7 +435,7 @@
 
                 if (!response.ok) throw new Error();
 
-                btnAck.innerText = "✅ Completed";
+                btnAck.innerText = "✅ รับทราบแล้ว";
                 statusBox.innerText = "✅ บันทึกเรียบร้อยแล้ว";
                 statusBox.className = "status success";
 
