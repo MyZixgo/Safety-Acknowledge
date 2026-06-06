@@ -49,6 +49,8 @@
             color: #777;
             font-size: 14px;
             background: #fafafa;
+            overflow: hidden;
+            position: relative;
         }
 
         label {
@@ -60,6 +62,7 @@
 
         input {
             width: 100%;
+            box-sizing: border-box;
             padding: 12px;
             border-radius: 10px;
             border: 1px solid #ddd;
@@ -110,6 +113,90 @@
         .error {
             color: #dc3545;
         }
+
+        .small-note {
+            font-size: 12px;
+            color: #777;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .view-btn {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+            font-weight: bold;
+            background: #007bff;
+            color: white;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        .view-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.78);
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .modal-content {
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            background: #fff;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 2;
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            width: 36px;
+            height: 36px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            width: 100%;
+            height: 80vh;
+            background: #f5f6f8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-body img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .modal-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
     </style>
 </head>
 
@@ -123,7 +210,9 @@
         <div class="card">
             <div class="card-title">📖 Document</div>
 
-            <div class="viewer">PDF / Image Preview</div>
+            <div class="viewer">กำลังโหลดเอกสาร...</div>
+            <button id="btnView" class="view-btn" disabled>🔍 View</button>
+            <div class="small-note" id="docStatus">กำลังค้นหาเอกสารจากระบบ...</div>
         </div>
 
         <!-- Employee Info -->
@@ -153,6 +242,14 @@
 
     </div>
 
+    <!-- Modal -->
+    <div id="docModal" class="modal">
+        <div class="modal-content">
+            <button id="btnCloseModal" class="modal-close">×</button>
+            <div id="modalBody" class="modal-body"></div>
+        </div>
+    </div>
+
     <script>
 
         // ✅ CONFIG
@@ -162,7 +259,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         const doc = urlParams.get("doc");
         const key = urlParams.get("key");
-        const file = decodeURIComponent(urlParams.get("file") || "");
 
         // ✅ ELEMENT
         const viewer = document.querySelector(".viewer");
@@ -174,17 +270,124 @@
 
         const btnAck = document.querySelector(".btn");
         const statusBox = document.getElementById("status");
+        const btnView = document.getElementById("btnView");
+        const docStatus = document.getElementById("docStatus");
 
-        // ✅ SHOW FILE
-        if (file) {
-            if (file.toLowerCase().includes(".pdf")) {
-                viewer.innerHTML = `<iframe src="${file}" style="width:100%;height:100%;border:none;"></iframe>`;
-            } else {
-                viewer.innerHTML = `<img src="${file}" style="width:100%;height:100%;object-fit:contain;">`;
+        const docModal = document.getElementById("docModal");
+        const modalBody = document.getElementById("modalBody");
+        const btnCloseModal = document.getElementById("btnCloseModal");
+
+        // ✅ DOCUMENT STATE
+        let docDataUrl = "";
+        let docMimeType = "";
+        let isSubmitted = false;
+
+        // ==============================
+        // ✅ LOAD DOCUMENT FROM FLOW
+        // ส่ง StatusDocument = Search + DocKey ไปให้ Flow
+        // ==============================
+        async function loadDocument() {
+            try {
+                viewer.innerHTML = "กำลังโหลดเอกสาร...";
+                docStatus.innerText = "กำลังค้นหาเอกสารจากระบบ...";
+                btnView.disabled = true;
+
+                const payload = {
+                    StatusDocument: "Search",
+                    DocKey: key
+                };
+
+                const response = await fetch(FLOW_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error("Search document failed");
+                }
+
+                const result = await response.json();
+
+                // ✅ รองรับหลายชื่อ field จาก Flow
+                const rawBase64 =
+                    result.FileBase64 ||
+                    result.fileBase64 ||
+                    result.base64 ||
+                    result.FileLink ||
+                    result.fileLink ||
+                    "";
+
+                docMimeType =
+                    result.MimeType ||
+                    result.mimeType ||
+                    result.FileType ||
+                    result.fileType ||
+                    "image/jpeg";
+
+                // ✅ ถ้า Flow ส่งกลับมาเป็น data URL อยู่แล้ว
+                if (rawBase64.startsWith("data:")) {
+                    docDataUrl = rawBase64;
+                } else if (rawBase64) {
+                    docDataUrl = `data:${docMimeType};base64,${rawBase64}`;
+                } else {
+                    throw new Error("No file returned from flow");
+                }
+
+                showDocument(docDataUrl, docMimeType);
+
+                btnView.disabled = false;
+                docStatus.innerText = "โหลดเอกสารเรียบร้อยแล้ว";
+
+            } catch (e) {
+                console.error(e);
+                viewer.innerHTML = "ไม่สามารถโหลดเอกสารได้";
+                docStatus.innerText = "❌ ไม่พบเอกสารหรือโหลดเอกสารไม่สำเร็จ";
+                docStatus.className = "small-note error";
             }
         }
 
-        // ✅ ENABLE BUTTON
+        // ==============================
+        // ✅ SHOW DOCUMENT IN VIEWER
+        // ==============================
+        function showDocument(dataUrl, mimeType) {
+            if (mimeType.toLowerCase().includes("pdf")) {
+                viewer.innerHTML = `<iframe src="${dataUrl}" style="width:100%;height:100%;border:none;"></iframe>`;
+            } else {
+                viewer.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:contain;">`;
+            }
+        }
+
+        // ==============================
+        // ✅ VIEW FULL SCREEN
+        // ==============================
+        btnView.addEventListener("click", () => {
+            if (!docDataUrl) return;
+
+            if (docMimeType.toLowerCase().includes("pdf")) {
+                modalBody.innerHTML = `<iframe src="${docDataUrl}"></iframe>`;
+            } else {
+                modalBody.innerHTML = `<img src="${docDataUrl}" alt="Document Preview">`;
+            }
+
+            docModal.style.display = "flex";
+        });
+
+        btnCloseModal.addEventListener("click", () => {
+            docModal.style.display = "none";
+            modalBody.innerHTML = "";
+        });
+
+        docModal.addEventListener("click", (e) => {
+            if (e.target === docModal) {
+                docModal.style.display = "none";
+                modalBody.innerHTML = "";
+            }
+        });
+
+        // ==============================
+        // ✅ ENABLE ACK BUTTON
+        // ==============================
         function checkEnable() {
             btnAck.disabled = !(
                 txtEmpCode.value.trim() &&
@@ -199,9 +402,9 @@
         txtName.oninput = checkEnable;
         chk.onchange = checkEnable;
 
+        // ==============================
         // ✅ SUBMIT ACK
-        let isSubmitted = false;
-
+        // ==============================
         btnAck.onclick = async () => {
 
             if (isSubmitted) {
@@ -231,7 +434,6 @@
 
                 if (!response.ok) throw new Error();
 
-                // ✅ SUCCESS
                 btnAck.innerText = "✅ Completed";
                 statusBox.innerText = "✅ บันทึกเรียบร้อยแล้ว";
                 statusBox.className = "status success";
@@ -239,6 +441,7 @@
                 isSubmitted = true;
 
             } catch (e) {
+                console.error(e);
                 btnAck.disabled = false;
                 btnAck.innerText = "✅ Acknowledge";
 
@@ -246,6 +449,11 @@
                 statusBox.className = "status error";
             }
         };
+
+        // ==============================
+        // ✅ INIT
+        // ==============================
+        loadDocument();
 
     </script>
 
