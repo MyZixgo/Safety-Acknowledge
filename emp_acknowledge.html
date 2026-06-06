@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safety Acknowledge</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f5f6f8;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: auto;
+            padding: 16px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .viewer {
+            width: 100%;
+            height: 300px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #777;
+            font-size: 14px;
+            background: #fafafa;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            margin-top: 4px;
+            font-size: 14px;
+        }
+
+        .checkbox {
+            display: flex;
+            align-items: center;
+            margin-top: 14px;
+            font-size: 13px;
+        }
+
+        .checkbox input {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            background: #28a745;
+            color: white;
+            margin-top: 16px;
+            cursor: pointer;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        .success {
+            color: #198754;
+        }
+
+        .error {
+            color: #dc3545;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h2>📄 Safety Acknowledge</h2>
+
+        <!-- Document -->
+        <div class="card">
+            <div class="card-title">📖 Document</div>
+
+            <div class="viewer">PDF / Image Preview</div>
+        </div>
+
+        <!-- Employee Info -->
+        <div class="card">
+            <div class="card-title">👤 Your Information</div>
+
+            <label>Employee Code *</label>
+            <input type="text" placeholder="Enter your code">
+
+            <label>Name *</label>
+            <input type="text" placeholder="Enter your name">
+        </div>
+
+        <!-- Confirm -->
+        <div class="card">
+            <div class="card-title">✅ Confirmation</div>
+
+            <div class="checkbox">
+                <input type="checkbox">
+                <span>I have read and understood this document</span>
+            </div>
+
+            <button class="btn">✅ Acknowledge</button>
+
+            <div id="status" class="status"></div>
+        </div>
+
+    </div>
+
+    <script>
+
+        // ✅ CONFIG
+        const FLOW_URL = "https://defaultd9cd485e39bd4cc995398c97631fbb.71.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8200a6f10f8146e1980c92b678a0ca3c/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=xAGfMQgr9boz-o6GilhFNfg4LJa6ccESXYNzExOpLyM";
+
+        // ✅ PARAM
+        const urlParams = new URLSearchParams(window.location.search);
+        const doc = urlParams.get("doc");
+        const key = urlParams.get("key");
+        const file = decodeURIComponent(urlParams.get("file") || "");
+
+        // ✅ ELEMENT
+        const viewer = document.querySelector(".viewer");
+
+        const inputs = document.querySelectorAll("input");
+        const txtEmpCode = inputs[0];
+        const txtName = inputs[1];
+        const chk = inputs[2];
+
+        const btnAck = document.querySelector(".btn");
+        const statusBox = document.getElementById("status");
+
+        // ✅ SHOW FILE
+        if (file) {
+            if (file.toLowerCase().includes(".pdf")) {
+                viewer.innerHTML = `<iframe src="${file}" style="width:100%;height:100%;border:none;"></iframe>`;
+            } else {
+                viewer.innerHTML = `<img src="${file}" style="width:100%;height:100%;object-fit:contain;">`;
+            }
+        }
+
+        // ✅ ENABLE BUTTON
+        function checkEnable() {
+            btnAck.disabled = !(
+                txtEmpCode.value.trim() &&
+                txtName.value.trim() &&
+                chk.checked
+            );
+        }
+
+        btnAck.disabled = true;
+
+        txtEmpCode.oninput = checkEnable;
+        txtName.oninput = checkEnable;
+        chk.onchange = checkEnable;
+
+        // ✅ SUBMIT ACK
+        let isSubmitted = false;
+
+        btnAck.onclick = async () => {
+
+            if (isSubmitted) {
+                alert("✅ บันทึกแล้ว");
+                return;
+            }
+
+            try {
+                btnAck.disabled = true;
+                btnAck.innerText = "กำลังบันทึก...";
+                statusBox.innerText = "";
+
+                const payload = {
+                    StatusDocument: "Acknowledge",
+                    DocumentID: doc,
+                    DocKey: key,
+                    EmployeeCode: txtEmpCode.value.trim(),
+                    EmployeeName: txtName.value.trim(),
+                    ReadDate: new Date().toISOString().split("T")[0]
+                };
+
+                const response = await fetch(FLOW_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error();
+
+                // ✅ SUCCESS
+                btnAck.innerText = "✅ Completed";
+                statusBox.innerText = "✅ บันทึกเรียบร้อยแล้ว";
+                statusBox.className = "status success";
+
+                isSubmitted = true;
+
+            } catch (e) {
+                btnAck.disabled = false;
+                btnAck.innerText = "✅ Acknowledge";
+
+                statusBox.innerText = "❌ เกิดข้อผิดพลาด กรุณาลองใหม่";
+                statusBox.className = "status error";
+            }
+        };
+
+    </script>
+
+</body>
+
+</html>
