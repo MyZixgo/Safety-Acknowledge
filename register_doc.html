@@ -212,33 +212,30 @@
 
         <h2>📄 Register Document</h2>
 
+        <!-- Document preparer's employee code -->
+        <label>Employee code of the preparer *</label>
+        <input type="text" id="txtCreatorCode" placeholder="Enter employee code" inputmode="numeric" maxlength="10">
+
         <!-- Upload -->
         <div class="card">
             <div class="card-title">📥 Upload Document</div>
-
             <div class="upload-box" id="uploadBox">+ Tap to upload file</div>
             <input type="file" id="fileInput" hidden>
-
             <div class="preview" id="preview">ยังไม่มีไฟล์</div>
-            <div class="small-note">รองรับรูป / PDF / เอกสารทั่วไป (จะถูกแปลงเป็น Base64 ก่อนส่งไป Power Automate)</div>
+            <div class="small-note">รองรับรูป / PDF / เอกสารทั่วไป</div>
         </div>
 
         <!-- Info -->
         <div class="card">
             <div class="card-title">📋 Document Information</div>
-
             <label>Document Name *</label>
             <input type="text" id="txtDocName" placeholder="Enter document name">
-
             <label>Document ID *</label>
             <input type="text" id="txtDocID" placeholder="SAF-001">
-
             <label>Description *</label>
             <textarea rows="3" id="txtDescription" placeholder="Required"></textarea>
-
             <label>Effective Date *</label>
             <input type="date" id="txtDate">
-
             <div class="small-note" id="docKeyPreview">DocKey: -</div>
         </div>
 
@@ -247,26 +244,9 @@
             <div class="card-title">⚙️ Document Status</div>
             <div class="checkbox">
                 <input type="checkbox" id="chkActive">
-                <span>Active *</span>
+                <span>Available for Acknowledge *</span>
             </div>
-            <div class="small-note">ต้องติ๊ก Active ก่อนจึงจะ Publish และ Generate Link ได้</div>
-        </div>
-
-        <!-- Link -->
-        <div class="card">
-            <div class="card-title">🔗 Generate Link</div>
-
-            <button class="btn btn-primary" id="btnGenerate" disabled>Generate Link</button>
-
-            <div class="link-box" id="linkBox">
-                ยังไม่มีลิงก์
-            </div>
-
-            <button class="btn btn-copy" id="btnCopy">📋 Copy</button>
-            <button class="btn btn-primary" id="btnQR">📷 Show QR</button>
-
-            <div id="qrBox" style="text-align:center;margin-top:10px;"></div>
-            <div class="status-text" id="genStatus">สถานะ: ยังไม่ได้ Publish หรือยังไม่ได้ติ๊ก Active</div>
+            <!-- <div class="small-note">ต้องติ๊ก Active ก่อนจึงจะ Publish และ Generate Link ได้</div> -->
         </div>
 
         <!-- Action -->
@@ -276,6 +256,19 @@
             <button class="btn btn-publish" id="btnPublish" disabled>Publish</button>
         </div>
         <div class="publish-hint" id="publishHint">กรอกข้อมูลให้ครบทั้งหมดก่อน จึงจะสามารถ Publish ได้</div>
+
+        <!-- Link -->
+        <div class="card">
+            <div class="card-title">🔗 Generate Link</div>
+            <button class="btn btn-primary" id="btnGenerate" disabled>Generate Link</button>
+            <div class="link-box" id="linkBox">
+                ยังไม่มีลิงก์
+            </div>
+            <button class="btn btn-copy" id="btnCopy">📋 Copy</button>
+            <button class="btn btn-primary" id="btnQR">📷 Show QR</button>
+            <div id="qrBox" style="text-align:center;margin-top:10px;"></div>
+            <div class="status-text" id="genStatus">สถานะ: ยังไม่ได้ Publish หรือยังไม่ได้ติ๊ก Active</div>
+        </div>
 
     </div>
 
@@ -292,6 +285,7 @@
         // ==============================
         // ELEMENTS
         // ==============================
+        const txtCreatorCode = document.getElementById("txtCreatorCode");
         const txtDocName = document.getElementById("txtDocName");
         const txtDocID = document.getElementById("txtDocID");
         const txtDescription = document.getElementById("txtDescription");
@@ -380,7 +374,6 @@
             });
             uploadBox.classList.remove("upload-missing");
         }
-
         function validateRequiredFields(showHighlight = false) {
             const validName = !!txtDocName.value.trim();
             const validID = !!txtDocID.value.trim();
@@ -388,6 +381,8 @@
             const validDate = !!txtDate.value;
             const validActive = chkActive.checked;
             const validFile = !!selectedFile;
+            // const validCreator = !!txtCreatorCode.value.trim();
+            const validCreator = /^\d{1,10}$/.test(txtCreatorCode.value);
 
             if (showHighlight) {
                 txtDocName.classList.toggle("required-missing", !validName);
@@ -395,9 +390,11 @@
                 txtDescription.classList.toggle("required-missing", !validDescription);
                 txtDate.classList.toggle("required-missing", !validDate);
                 uploadBox.classList.toggle("upload-missing", !validFile);
+                txtCreatorCode.classList.toggle("required-missing", !validCreator);
             }
 
-            return validName && validID && validDescription && validDate && validActive && validFile;
+            return validName &&
+                validID && validDescription && validDate && validActive && validFile && validCreator;
         }
 
         function updatePublishButtonState() {
@@ -427,10 +424,10 @@
             btnGenerate.disabled = !canGenerate;
 
             if (!chkActive.checked) {
-                genStatus.innerText = "สถานะ: ต้องติ๊ก Active ก่อน";
+                genStatus.innerText = "สถานะ: ต้องติ๊ก Available for Acknowledge ก่อน";
                 genStatus.className = "status-text";
             } else if (!uploadedFileLink) {
-                genStatus.innerText = "สถานะ: ต้อง Publish ให้ Power Automate บันทึกไฟล์ก่อน";
+                genStatus.innerText = "สถานะ: ต้อง Publish ไฟล์ก่อน";
                 genStatus.className = "status-text";
             } else {
                 genStatus.innerText = "สถานะ: พร้อม Generate Link";
@@ -439,6 +436,7 @@
         }
 
         function resetForm() {
+            txtCreatorCode.value = "";
             txtDocName.value = "";
             txtDocID.value = "";
             txtDescription.value = "";
@@ -499,6 +497,16 @@
                 updateDocKeyPreview();
                 updatePublishButtonState();
             });
+
+        });
+
+        // ✅ NEW
+        txtCreatorCode.addEventListener("input", () => {
+
+            // ✅ เก็บเฉพาะตัวเลข
+            txtCreatorCode.value = txtCreatorCode.value.replace(/[^0-9]/g, "");
+            txtCreatorCode.classList.remove("required-missing");
+            updatePublishButtonState();
         });
 
         chkActive.addEventListener("change", () => {
@@ -531,13 +539,14 @@
                 const base64Only = await fileToBase64(selectedFile);
 
                 const payload = {
-                    StatusDocument:"Register",
+                    StatusDocument: "Register",
                     DocumentName: txtDocName.value.trim(),
                     DocumentID: txtDocID.value.trim(),
                     Description: txtDescription.value.trim(),
                     EffectiveDate: txtDate.value,
                     Active: chkActive.checked,
                     DocKey: latestDocKey,
+                    CreatorCode: txtCreatorCode.value.trim(),
                     OriginalFileName: selectedFile.name,
                     MimeType: selectedFile.type || "application/octet-stream",
                     FileBase64: base64Only
