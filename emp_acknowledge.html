@@ -220,10 +220,18 @@
             <div class="card-title">👤 ข้อมูลผู้ใช้งาน</div>
 
             <label>รหัสพนักงาน *</label>
-            <input type="text" placeholder="Enter your code">
+            <input 
+                type="text" 
+                id="txtEmpCode"
+                placeholder="Enter your code"
+                inputmode="numeric"
+                maxlength="10"
+                pattern="[0-9]*"
+                autocomplete="off"
+            >
 
             <label>ชื่อ นามสกุล *</label>
-            <input type="text" placeholder="Enter your name">
+            <input type="text" id="txtName" placeholder="Enter your name">
 
         </div>
 
@@ -232,11 +240,11 @@
             <div class="card-title">✅ การรับทราบ</div>
 
             <div class="checkbox">
-                <input type="checkbox">
+                <input type="checkbox" id="chkRead">
                 <span>ข้าพเจ้าได้อ่านและเข้าใจเอกสารนี้แล้ว</span>
             </div>
 
-            <button class="btn">✅ รับทราบ</button>
+            <button class="btn" id="btnAck">✅ รับทราบ</button>
 
             <div id="status" class="status"></div>
         </div>
@@ -264,12 +272,11 @@
         // ✅ ELEMENT
         const viewer = document.querySelector(".viewer");
 
-        const inputs = document.querySelectorAll("input");
-        const txtEmpCode = inputs[0];
-        const txtName = inputs[1];
-        const chk = inputs[2];
+        const txtEmpCode = document.getElementById("txtEmpCode");
+        const txtName = document.getElementById("txtName");
+        const chk = document.getElementById("chkRead");
 
-        const btnAck = document.querySelector(".btn");
+        const btnAck = document.getElementById("btnAck");
         const statusBox = document.getElementById("status");
         const btnView = document.getElementById("btnView");
         const docStatus = document.getElementById("docStatus");
@@ -310,7 +317,6 @@
 
                 const result = await response.json();
 
-                // ✅ รองรับหลายชื่อ field จาก Flow
                 const rawBase64 =
                     result.FileBase64 ||
                     result.fileBase64 ||
@@ -326,7 +332,6 @@
                     result.fileType ||
                     "image/jpeg";
 
-                // ✅ ถ้า Flow ส่งกลับมาเป็น data URL อยู่แล้ว
                 if (rawBase64.startsWith("data:")) {
                     docDataUrl = rawBase64;
                 } else if (rawBase64) {
@@ -387,11 +392,21 @@
         });
 
         // ==============================
+        // ✅ EMPLOYEE CODE = NUMBER ONLY, MAX 10
+        // ==============================
+        txtEmpCode.addEventListener("input", () => {
+            txtEmpCode.value = txtEmpCode.value.replace(/[^0-9]/g, "").slice(0, 10);
+            checkEnable();
+        });
+
+        // ==============================
         // ✅ ENABLE ACK BUTTON
         // ==============================
         function checkEnable() {
+            const validEmpCode = /^\d{1,10}$/.test(txtEmpCode.value.trim());
+
             btnAck.disabled = !(
-                txtEmpCode.value.trim() &&
+                validEmpCode &&
                 txtName.value.trim() &&
                 chk.checked
             );
@@ -399,7 +414,6 @@
 
         btnAck.disabled = true;
 
-        txtEmpCode.oninput = checkEnable;
         txtName.oninput = checkEnable;
         chk.onchange = checkEnable;
 
@@ -444,7 +458,7 @@
             } catch (e) {
                 console.error(e);
                 btnAck.disabled = false;
-                btnAck.innerText = "✅ Acknowledge";
+                btnAck.innerText = "✅ รับทราบ";
 
                 statusBox.innerText = "❌ เกิดข้อผิดพลาด กรุณาลองใหม่";
                 statusBox.className = "status error";
